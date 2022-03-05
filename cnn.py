@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Activation, Flatten, Conv2D, MaxPooling2D
 
@@ -7,7 +6,6 @@ class CNN:
     def asl_text(self, x: np.array, y: np.array):
         # normalizing
         x = x / 255.0
-        x = tf.reshape(x, x.shape)
 
         model = Sequential()
 
