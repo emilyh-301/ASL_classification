@@ -1,5 +1,7 @@
 import os
+import shutil
 import csv
+import math
 import numpy as np
 from PIL import Image
 
@@ -8,7 +10,13 @@ class Data:
         categories = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
                       'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
 
+        # If the csv folder does not exist, create one.
         if not os.path.exists(os.path.join('Dataset', 'csv')):
+            os.mkdir(os.path.join('Dataset', 'csv'))
+
+        # If the csv folder is not empty, delete all files.
+        if len(os.listdir(os.path.join('Dataset', 'csv'))) != 0:
+            shutil.rmtree(os.path.join('Dataset', 'csv'))
             os.mkdir(os.path.join('Dataset', 'csv'))
         
         for category in categories:
@@ -31,12 +39,12 @@ class Data:
         for category in categories:
             csv_path = os.path.join('Dataset', 'csv', category + '.csv')
             cat_dataset = self.csv_2_list(csv_path=csv_path)
-            cat_label = [category] * len(cat_dataset)
+            cat_label = [[ord(category)]] * len(cat_dataset)
             dataset.extend(cat_dataset)
-            labels.append(cat_label)
+            labels.extend(cat_label)
             print('\n' + category + ' has been loaded.\n')
 
-        return np.array(dataset), np.array(dataset)
+        return np.array(dataset), np.array(labels)
 
     def img_2_csv(self, img_path: str, csv_path: str, mode='a') -> None:
         img = Image.open(img_path)
@@ -46,9 +54,11 @@ class Data:
             write.writerow(img_arr)
 
     def csv_2_list(self, csv_path: str, mode='r') -> list:
-        arr = list()
+        images = list()
         with open(csv_path, mode) as f:
             reader = csv.reader(f, quoting=csv.QUOTE_NONNUMERIC)
             for row in reader:
-                arr.append(row)
-        return arr
+                pixel_count = int(math.sqrt(len(row)))
+                image_2d = np.reshape(row, (-1, pixel_count))
+                images.append(image_2d)
+        return images
