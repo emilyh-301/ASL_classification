@@ -39,7 +39,7 @@ class Data:
         for category in categories:
             csv_path = os.path.join('Dataset', 'csv', category + '.csv')
             cat_dataset = self.csv_2_list(csv_path=csv_path)
-            cat_label = [[ord(category)]] * len(cat_dataset)
+            cat_label = [[ord(category) - 65]] * len(cat_dataset)
             dataset.extend(cat_dataset)
             labels.extend(cat_label)
             print('\n' + category + ' has been loaded.\n')
