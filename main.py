@@ -11,7 +11,4 @@ from data import Data
 if __name__ == '__main__':
     cnn = CNN()
     data = Data()
-
-    # data.preprocess()
-    x, y = data.load()
-    cnn.asl_text(x=x, y=y)
+    cnn.loop(*data.load())
