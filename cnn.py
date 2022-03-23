@@ -76,10 +76,10 @@ class CNN:
         return model_checkpoint_callback
 
     def _is_name_used(self, name: str) -> bool:
-        with FileLock('lock'):
+        with FileLock('used'):
             names = p.read(filepath='used.txt')
             if name not in names:
-                p.write(filepath='used.txt', content=name)
+                p.write(filepath='used.txt', content=name + '\n')
         return True if name in names else False
 
     def _reshape_dataset(self, x: np.array) -> np.array:
