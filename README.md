@@ -8,4 +8,4 @@ cmpsc 445 project
 <br>
 <code>python3 move.py [source] [destination] [modulus]</code>
 <br>
-<code>python3 cleanup.py <kill>
+<code>python3 cleanup.py [kill]
