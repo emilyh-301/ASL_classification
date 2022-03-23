@@ -6,9 +6,11 @@
 
 from cnn import CNN
 from data import Data
+from trace import Trace
 
 
 if __name__ == '__main__':
+    Trace().start()
     cnn = CNN()
     data = Data()
     cnn.loop(*data.load())
