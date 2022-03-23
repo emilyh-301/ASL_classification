@@ -1,0 +1,11 @@
+#!/usr/bin/expect -f
+
+cd ~/PycharmProjects/ASL_classification
+declare -a arr=("courant" "dijkstra" "galois" "hardy" "noyce" "nygaard" "perlis" "shannon" "ulam" "wilkinson" "zeno" "zorn" "ada" "alonzo" "babbage" "borg" "cantor" "cray" "dahl" "eckert" "erdos" "euclid" "euler" "fermat" "fourier" "frege" "gauss" "godel" "grace" "hamming" "hilbert" "noether" "pascal" "peano" "riemann" "wilkes" "zermelo")
+python3 cleanup.py
+
+for i in "${arr[@]}"
+
+do
+	ssh "$i" "cd ~/PycharmProjects/ASL_classification/; python3 research.py > /dev/null 2>&1 & exit"
+done
