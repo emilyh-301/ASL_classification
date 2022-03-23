@@ -23,6 +23,9 @@ def apply_to_all(func):
 
 @apply_to_all(handle_exception)
 class Path:
+    def copy(self, src, dst):
+        shutil.copyfile(src, dst)
+
     def create(self, *args):
         # File
         if '.' in args[-1]:
