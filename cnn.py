@@ -2,9 +2,7 @@ import random
 import numpy as np
 import traceback
 from filelock import FileLock
-from tensorflow.keras import losses
-from tensorflow.keras.callbacks import ModelCheckpoint
-from tensorflow.keras.models import Sequential
+from tensorflow.keras import losses, models
 from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
 from path import Path
 
@@ -14,30 +12,53 @@ from path import Path
 # The difference between training, validation, and test set
 # https://stats.stackexchange.com/a/96869
 
+# Save and load model
+# https://www.tensorflow.org/guide/keras/save_and_serialize
 
-p = Path()
+# Save and load model with checkpoint
+# https://keras.io/api/callbacks/model_checkpoint/
+
+
+path = Path()
 
 class CNN:
-    def loop(self, x: np.array, y: np.array, activations: list, optimizers: list, losses: list) -> None:
+    def load(self):
+        names = path.listdir(path.var.model_dir)
+        for name in names:
+            try:
+                model = self._load_model(filepath=path.var.model_dir + name + '/')
+                model.summary()
+            except Exception as e:
+                print(e)
+                print('\n\n\n')
+
+    def model(self, x: np.array, y: np.array, activations: list, optimizers: list, losses: list) -> None:
         for activation in activations:
             for optimizer in optimizers:
                 for loss in losses:
                     name = activation + '_' + optimizer + '_' + loss.split('.')[1].split('(')[0]
-                    if not self._is_name_used(name=name):
+                    if not self._was_name_used(name=name):
                         try:
                             print('\n', name)
-                            self.model(name=name, x=x, y=y, activation=activation, optimizer=optimizer, loss=loss)
+                            self._create_model(
+                                name=name,
+                                x=x,
+                                y=y,
+                                activation=activation,
+                                optimizer=optimizer,
+                                loss=loss
+                            )
                         except Exception:
-                            p.write(
-                                filepath=p.path('Exceptions', name + '.txt'),
+                            path.write(
+                                filepath=path.path('Exceptions', name + '.txt'),
                                 content=traceback.format_exc()
                             )
 
-    def model(self, name: str, x: np.array, y: np.array, activation: str, optimizer: str, loss: str) -> None:
+    def _create_model(self, name: str, x: np.array, y: np.array, activation: str, optimizer: str, loss: str) -> None:
         x = self._reshape_dataset(x=x)
         x, y = self._shuffle_inputs(x=x, y=y)
 
-        model = Sequential()
+        model = models.Sequential()
 
         # first layer
         model.add(Conv2D(32, (3, 3), activation=activation, input_shape=x.shape[1:]))
@@ -53,7 +74,7 @@ class CNN:
         # output layer
         model.add(Flatten())
         model.add(Dense(64, activation=activation))
-        model.add(Dense(26))    # 26 letters
+        model.add(Dense(26))  # 26 letters
 
         model.compile(
             optimizer=optimizer,
@@ -61,26 +82,11 @@ class CNN:
             metrics=['accuracy']
         )
 
-        model_checkpoint = self._init_checkpoint(name=name)
-        model.fit(x, y, batch_size=1, epochs=2000, validation_split=.2, callbacks=[model_checkpoint])
+        model.fit(x, y, batch_size=2, epochs=1000, validation_split=.2)
+        model.save(filepath=path.var.model_dir + name + '/')
 
-    def _init_checkpoint(self, name) -> ModelCheckpoint:
-        model_checkpoint_callback = ModelCheckpoint(
-            filepath='Models/' + name + '/',
-            save_weights_only=True,
-            save_freq='epoch',
-            period=1,
-            monitor='val_accuracy',
-            mode='max',
-            save_best_only=True)
-        return model_checkpoint_callback
-
-    def _is_name_used(self, name: str) -> bool:
-        with FileLock('used'):
-            names = p.read(filepath='used.txt')
-            if name not in names:
-                p.write(filepath='used.txt', content=name + '\n')
-        return True if name in names else False
+    def _load_model(self, filepath: str) -> models.Sequential:
+        return models.load_model(filepath=filepath)
 
     def _reshape_dataset(self, x: np.array) -> np.array:
         # Normalizing
@@ -101,3 +107,10 @@ class CNN:
         x, y = zip(*temp)
         x, y = np.array(x), np.array(y)
         return x, y
+
+    def _was_name_used(self, name: str) -> bool:
+        with FileLock(path.var.used_lock):
+            names = path.read(filepath=path.var.used_filepath)
+            if name not in names:
+                path.write(filepath=path.var.used_filepath, content=name + '\n')
+        return True if name in names else False
