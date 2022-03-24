@@ -1,6 +1,7 @@
 import os
 import shutil
 import traceback
+from variable import Variable
 
 
 def handle_exception(func):
@@ -23,6 +24,8 @@ def apply_to_all(func):
 
 @apply_to_all(handle_exception)
 class Path:
+    var = Variable()
+
     def copy(self, src, dst):
         shutil.copyfile(src, dst)
 
