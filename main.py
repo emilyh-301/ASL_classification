@@ -2,6 +2,11 @@
 # American Sign Language to text
 # Starting with A-Z
 
+# Disable TF warnings
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
+
 # https://pythonprogramming.net/loading-custom-data-deep-learning-python-tensorflow-keras/
 
 from cnn import CNN
@@ -13,4 +18,5 @@ if __name__ == '__main__':
     Trace().start()
     cnn = CNN()
     data = Data()
-    cnn.loop(*data.load())
+    cnn.model(*data.load())
+    # cnn.load()
