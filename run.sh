@@ -6,5 +6,5 @@ declare -a arr=("courant" "dijkstra" "galois" "hardy" "noyce" "nygaard" "perlis"
 for i in "${arr[@]}"
 
 do
-	ssh "$i" "cd ~/PycharmProjects/ASL_classification/; python3 research.py > /dev/null 2>&1 & exit"
+	ssh "$i" "cd ~/PycharmProjects/ASL_classification/; python3 research.py > /dev/null 2>&1 & python3 research.py > /dev/null 2>&1 & exit"
 done
