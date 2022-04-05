@@ -1,6 +1,7 @@
 import os
 import shutil
 import traceback
+
 from variable import Variable
 
 
@@ -32,7 +33,7 @@ class Path:
     def create(self, *args):
         # File
         if '.' in args[-1]:
-            open(self.path(*args), 'a')
+            open(self.path(*args), 'w')
         # Directory
         else:
             os.mkdir(self.path(*args))
@@ -62,6 +63,6 @@ class Path:
             contents = f.read().splitlines()
         return contents
 
-    def write(self, filepath: str, content: str) -> None:
-        with open(filepath, 'a') as f:
+    def write(self, filepath: str, content: str, mode='a') -> None:
+        with open(filepath, mode=mode) as f:
             f.write(content)
