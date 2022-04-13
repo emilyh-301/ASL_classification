@@ -20,19 +20,22 @@ from trace import Trace
 # Save and load model with checkpoint
 # https://keras.io/api/callbacks/model_checkpoint/
 
+BATCH_SIZE = 128
+EPOCHS = 1000
 
-path = Path()
+p = Path()
 trace = Trace()
 
 
 class CNN:
     def load(self, x: np.array, y: np.array) -> None:
         x = self._reshape_dataset(x=x)
-        names = path.listdir(path.var.model_dir)
+        model_path = self._latest_model_path()
+        names = p.listdir(model_path)
         for name in names:
             try:
                 print(name)
-                model = self._load_model(filepath=path.var.model_dir + name + '/')
+                model = self._load_model(filepath=p.path(model_path, name))
                 prediction = model.predict(x=x)
 
                 count = 0
@@ -46,43 +49,44 @@ class CNN:
                 print(e)
                 print('\n\n\n')
 
-    def model(self, x: np.array, y: np.array, activations: list, optimizers: list, losses: list) -> None:
+    def model(self, x: np.array, y: np.array, hidden_activations: list, output_activations: list, optimizers: list, losses: list) -> None:
         trace.update_liveness(alive=True)
         x = self._reshape_dataset(x=x)
         x, y = self._shuffle_inputs(x=x, y=y)
 
-        for activation in activations:
-            for optimizer in optimizers:
-                for loss in losses:
-                    name = activation + '_' + optimizer + '_' + loss.split('.')[1].split('(')[0]
-                    if not self._was_name_used(name=name):
-                        try:
-                            print('\n', name)
-                            self._create_model(name=name, x=x, y=y, activation=activation, optimizer=optimizer, loss=loss)
-                        except Exception:
-                            path.write(
-                                filepath=path.path('Exceptions', name + '.txt'),
-                                content=traceback.format_exc()
-                            )
+        for hidden_activation in hidden_activations:
+            for output_activation in output_activations:
+                for optimizer in optimizers:
+                    for loss in losses:
+                        name = hidden_activation + '_' + output_activation + '_' + optimizer + '_' + loss.split('.')[1].split('(')[0]
+                        if not self._was_name_used(name=name):
+                            try:
+                                print('\n', name)
+                                self._create_model(name=name, x=x, y=y, hidden_activation=hidden_activation, output_activation=output_activation, optimizer=optimizer, loss=loss)
+                            except Exception:
+                                p.write(
+                                    filepath=p.path('Exceptions', name + '.txt'),
+                                    content=traceback.format_exc()
+                                )
         trace.update_liveness(alive=False)
 
-    def _create_model(self, name: str, x: np.array, y: np.array, activation: str, optimizer: str, loss: str) -> None:
+    def _create_model(self, name: str, x: np.array, y: np.array, hidden_activation: str, output_activation: str, optimizer: str, loss: str) -> None:
         model = models.Sequential()
 
         # first layer
-        model.add(Conv2D(32, (3, 3), activation=activation, input_shape=x.shape[1:]))
+        model.add(Conv2D(32, (3, 3), activation=hidden_activation, input_shape=x.shape[1:]))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
         # second layer
-        model.add(Conv2D(64, (3, 3), activation=activation))
+        model.add(Conv2D(64, (3, 3), activation=hidden_activation))
         model.add(MaxPooling2D(pool_size=(2, 2)))
 
         # third layer
-        model.add(Conv2D(64, (3, 3), activation=activation))
+        model.add(Conv2D(64, (3, 3), activation=hidden_activation))
 
         # output layer
         model.add(Flatten())
-        model.add(Dense(64, activation=activation))
+        model.add(Dense(64, activation=output_activation))
         model.add(Dense(26))  # 26 letters
 
         model.compile(
@@ -91,9 +95,14 @@ class CNN:
             metrics=['accuracy']
         )
 
-        history = model.fit(x, y, batch_size=32, epochs=1000, validation_split=.2)
-        self._save_history(name=name, history_df=pd.DataFrame(history.history))
-        model.save(filepath=path.var.model_dir + name + '/')
+        history = model.fit(x, y, batch_size=BATCH_SIZE, epochs=EPOCHS, validation_split=.2)
+        self._save_history(name=name + '_' + str(EPOCHS), history_df=pd.DataFrame(history.history))
+        model.save(filepath=p.var.model_dir + str(EPOCHS) + '/' + name + '/')
+
+    def _latest_model_path(self):
+        dirs = p.listdir(p.var.model_dir)
+        max_epochs = max([int(d) for d in dirs])
+        return p.path(p.var.model_dir, str(max_epochs))
 
     def _load_model(self, filepath: str) -> models.Sequential:
         return models.load_model(filepath=filepath)
@@ -120,12 +129,12 @@ class CNN:
         return x, y
 
     def _was_name_used(self, name: str) -> bool:
-        with FileLock(path.var.used_lock):
-            names = path.read(filepath=path.var.used_filepath)
+        with FileLock(p.var.used_lock):
+            names = p.read(filepath=p.var.used_filepath)
             if name not in names:
-                path.write(filepath=path.var.used_filepath, content=name + '\n')
+                p.write(filepath=p.var.used_filepath, content=name + '\n')
         return True if name in names else False
 
     def _save_history(self, name: str, history_df: pd.DataFrame) -> None:
-        with open(path.var.history_dir + name + '.json', mode='w') as f:
+        with open(p.var.history_dir + name + '.json', mode='w') as f:
             history_df.to_json(f)
