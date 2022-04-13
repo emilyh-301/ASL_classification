@@ -45,23 +45,24 @@ class Data(Path):
 
     def load_training_dataset(self) -> tuple:
         dataset, labels = self._load_dataset(directory='Training')
-        activations = ['relu', 'sigmoid', 'softmax', 'softplus', 'softsign', 'tanh', 'selu', 'elu', 'exponential']
-        optimizers = ['sgd', 'rmsprop', 'adam', 'adadelta', 'adagrad', 'adamax', 'nadam', 'ftrl']
+        hidden_activations = ['relu', 'sigmoid', 'tanh']
+        output_activations = ['linear', 'sigmoid', 'softmax']
+        optimizers = ['sgd', 'rmsprop', 'adam', 'adadelta', 'adagrad']
         losses = [
             'losses.SparseCategoricalCrossentropy(from_logits=True)',
-            'losses.Poisson()',
-            'losses.KLDivergence()',
-            'losses.MeanSquaredError()',
-            'losses.MeanAbsoluteError()',
-            'losses.MeanAbsolutePercentageError()',
-            'losses.MeanSquaredLogarithmicError()',
-            'losses.Huber()',
-            'losses.LogCosh()',
-            'losses.Hinge()',
-            'losses.SquaredHinge()',
-            'losses.CategoricalHinge()'
+            # 'losses.Poisson()',
+            # 'losses.KLDivergence()',
+            # 'losses.MeanSquaredError()',
+            # 'losses.MeanAbsoluteError()',
+            # 'losses.MeanAbsolutePercentageError()',
+            # 'losses.MeanSquaredLogarithmicError()',
+            # 'losses.Huber()',
+            # 'losses.LogCosh()',
+            # 'losses.Hinge()',
+            # 'losses.SquaredHinge()',
+            # 'losses.CategoricalHinge()'
         ]
-        return dataset, labels, activations, optimizers, losses
+        return dataset, labels, hidden_activations, output_activations, optimizers, losses
 
     def load_test_dataset(self) -> tuple:
         dataset, labels = self._load_dataset(directory='Test')
