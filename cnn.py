@@ -21,35 +21,35 @@ from trace import Trace
 # https://keras.io/api/callbacks/model_checkpoint/
 
 BATCH_SIZE = 128
-EPOCHS = 1000
 
-p = Path()
+path = Path()
 trace = Trace()
 
 
 class CNN:
-    def load(self, x: np.array, y: np.array) -> None:
+    def test(self, *data, epoch: int) -> None:
+        x, y = data
         x = self._reshape_dataset(x=x)
-        model_path = self._latest_model_path()
-        names = p.listdir(model_path)
+        model_path = path.join(path.var.model_dir, str(epoch))
+        names = path.listdir(model_path)
+
         for name in names:
             try:
-                print(name)
-                model = self._load_model(filepath=p.path(model_path, name))
+                print(name, '\n')
+                model = self._load_model(filepath=path.join(model_path, name))
                 prediction = model.predict(x=x)
-
-                count = 0
-                for i in range(len(y)):
-                    if prediction.argmax(axis=-1)[i] == y[i][0]:
-                        count += 1
-                accuracy = round(count / len(y) * 100, 3)
-                print('Accuracy:', str(accuracy) + '%')
-                print()
+                accuracy = self._accuracy(prediction=prediction, y=y)
+                path.write(
+                    filepath=path.join(path.var.result_dir, str(epoch) + '.txt'),
+                    content=name + '\n' + 'Accuracy: ' + str(accuracy) + '%' + '\n',
+                    mode='a'
+                )
             except Exception as e:
                 print(e)
                 print('\n\n\n')
 
-    def model(self, x: np.array, y: np.array, hidden_activations: list, output_activations: list, optimizers: list, losses: list) -> None:
+    def train(self, *data, epoch: int) -> None:
+        x, y, hidden_activations, output_activations, optimizers, losses = data
         trace.update_liveness(alive=True)
         x = self._reshape_dataset(x=x)
         x, y = self._shuffle_inputs(x=x, y=y)
@@ -59,18 +59,37 @@ class CNN:
                 for optimizer in optimizers:
                     for loss in losses:
                         name = hidden_activation + '_' + output_activation + '_' + optimizer + '_' + loss.split('.')[1].split('(')[0]
-                        if not self._was_name_used(name=name):
-                            try:
-                                print('\n', name)
-                                self._create_model(name=name, x=x, y=y, hidden_activation=hidden_activation, output_activation=output_activation, optimizer=optimizer, loss=loss)
-                            except Exception:
-                                p.write(
-                                    filepath=p.path('Exceptions', name + '.txt'),
-                                    content=traceback.format_exc()
-                                )
+                        if self._model_exists(name=name, epoch=epoch) or self._name_was_used(name=name):
+                            continue
+                        try:
+                            print(name, '\n')
+                            self._model(
+                                hidden_activation,
+                                output_activation,
+                                optimizer,
+                                loss,
+                                name=name,
+                                epoch=epoch,
+                                x=x,
+                                y=y,
+                            )
+                        except Exception:
+                            path.write(
+                                filepath=path.join(path.var.exception_dir, name + str(epoch) + '.txt'),
+                                content=traceback.format_exc()
+                            )
         trace.update_liveness(alive=False)
 
-    def _create_model(self, name: str, x: np.array, y: np.array, hidden_activation: str, output_activation: str, optimizer: str, loss: str) -> None:
+    def _accuracy(self, prediction: np.array, y: np.array) -> float:
+        count = 0
+        for i in range(len(y)):
+            if prediction.argmax(axis=-1)[i] == y[i][0]:
+                count += 1
+        accuracy = round(count / len(y) * 100, 3)
+        return accuracy
+
+    def _create_model(self, *func, x: np.array) -> models.Sequential:
+        hidden_activation, output_activation, optimizer, loss = func
         model = models.Sequential()
 
         # first layer
@@ -94,18 +113,32 @@ class CNN:
             loss=eval(loss),
             metrics=['accuracy']
         )
-
-        history = model.fit(x, y, batch_size=BATCH_SIZE, epochs=EPOCHS, validation_split=.2)
-        self._save_history(name=name + '_' + str(EPOCHS), history_df=pd.DataFrame(history.history))
-        model.save(filepath=p.var.model_dir + str(EPOCHS) + '/' + name + '/')
-
-    def _latest_model_path(self):
-        dirs = p.listdir(p.var.model_dir)
-        max_epochs = max([int(d) for d in dirs])
-        return p.path(p.var.model_dir, str(max_epochs))
+        return model
 
     def _load_model(self, filepath: str) -> models.Sequential:
         return models.load_model(filepath=filepath)
+
+    def _model(self, *func, name: str, epoch: int, x: np.array, y: np.array) -> None:
+        model = self._create_model(*func, x=x) if epoch == 1000 else self._load_model(filepath=path.join(path.var.model_dir, str(epoch - 1000), name))
+        history = model.fit(x, y, batch_size=BATCH_SIZE, epochs=epoch, validation_split=.2)
+        self._save_history(
+            filepath=path.join(path.var.history_dir, str(epoch), name + '.json'),
+            history_df=pd.DataFrame(history.history)
+        )
+        model.save(filename=path.join(path.var.model_dir, str(epoch), name))
+
+    def _model_exists(self, name: str, epoch: int) -> bool:
+        for model_name in path.listdir(path.join(path.var.model_dir, str(epoch))):
+            if model_name == name:
+                return True
+        return False
+
+    def _name_was_used(self, name: str) -> bool:
+        with FileLock(path.var.used_lock):
+            names = path.read(filepath=path.var.used_filepath)
+            if name not in names:
+                path.write(filepath=path.var.used_filepath, content=name + '\n')
+        return True if name in names else False
 
     def _reshape_dataset(self, x: np.array) -> np.array:
         # Normalizing
@@ -128,13 +161,6 @@ class CNN:
         x, y = np.array(x), np.array(y)
         return x, y
 
-    def _was_name_used(self, name: str) -> bool:
-        with FileLock(p.var.used_lock):
-            names = p.read(filepath=p.var.used_filepath)
-            if name not in names:
-                p.write(filepath=p.var.used_filepath, content=name + '\n')
-        return True if name in names else False
-
-    def _save_history(self, name: str, history_df: pd.DataFrame) -> None:
-        with open(p.var.history_dir + name + '.json', mode='w') as f:
+    def _save_history(self, filepath: str, history_df: pd.DataFrame) -> None:
+        with open(filepath, mode='w') as f:
             history_df.to_json(f)
