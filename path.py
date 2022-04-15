@@ -33,29 +33,29 @@ class Path:
     def create(self, *args):
         # File
         if '.' in args[-1]:
-            open(self.path(*args), 'w')
+            open(self.join(*args), 'w')
         # Directory
         else:
-            os.mkdir(self.path(*args))
+            os.mkdir(self.join(*args))
 
     def delete(self, *args):
         # File
         if '.' in args[-1]:
-            os.remove(self.path(*args))
+            os.remove(self.join(*args))
         # Directory
         else:
-            shutil.rmtree(self.path(*args))
+            shutil.rmtree(self.join(*args))
 
     def exists(self, *args):
-        return os.path.exists(self.path(*args))
+        return os.path.exists(self.join(*args))
 
     def is_empty(self, *args):
         return len(self.listdir(*args)) == 0
 
     def listdir(self, *args):
-        return os.listdir(self.path(*args))
+        return os.listdir(self.join(*args))
 
-    def path(self, *args):
+    def join(self, *args):
         return os.path.join(*args)
 
     def read(self, filepath: str) -> list:
