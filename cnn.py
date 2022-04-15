@@ -49,8 +49,8 @@ class CNN:
                 print('\n\n\n')
 
     def train(self, *data, epoch: int) -> None:
-        x, y, hidden_activations, output_activations, optimizers, losses = data
         trace.update_liveness(alive=True)
+        x, y, hidden_activations, output_activations, optimizers, losses = data
         x = self._reshape_dataset(x=x)
         x, y = self._shuffle_inputs(x=x, y=y)
 
@@ -59,8 +59,17 @@ class CNN:
                 for optimizer in optimizers:
                     for loss in losses:
                         name = hidden_activation + '_' + output_activation + '_' + optimizer + '_' + loss.split('.')[1].split('(')[0]
-                        if self._model_exists(name=name, epoch=epoch) or self._name_was_used(name=name):
+
+                        # Previous epoch model does not exist.
+                        if epoch != 1000 and not self._model_exists(name=name, epoch=epoch - 1000):
                             continue
+                        # The model already exists.
+                        if self._model_exists(name=name, epoch=epoch):
+                            continue
+                        # The model is being created by another process.
+                        if self._name_was_used(name=name):
+                            continue
+
                         try:
                             print(name, '\n')
                             self._model(
