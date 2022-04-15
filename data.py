@@ -1,7 +1,7 @@
 import csv
 import math
 import random
-
+import json
 import numpy as np
 from PIL import Image
 
@@ -12,6 +12,7 @@ categories = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', '
 
 
 class Data(Path):
+    # Convert image files to csv files.
     def preprocess(self) -> None:
         # If directory does not exist, create one.
         if not self.exists('Training'):
@@ -29,16 +30,16 @@ class Data(Path):
 
         for category in categories:
             print(category)
-            cat_path = self.path('Dataset', category)
-            training_path = self.path('Training', category + '.csv')
-            test_path = self.path('Test', category + '.csv')
+            cat_path = self.join('Dataset', category)
+            training_path = self.join('Training', category + '.csv')
+            test_path = self.join('Test', category + '.csv')
 
             training_dataset, test_dataset = self._split_training_test(self.listdir(cat_path))
             for img_filename in training_dataset:
-                img_path = self.path('Dataset', category, img_filename)
+                img_path = self.join('Dataset', category, img_filename)
                 self._img_2_csv(img_path=img_path, csv_path=training_path)
             for img_filename in test_dataset:
-                img_path = self.path('Dataset', category, img_filename)
+                img_path = self.join('Dataset', category, img_filename)
                 self._img_2_csv(img_path=img_path, csv_path=test_path)
 
         print('\nThe dataset has been preprocessed.\n')
@@ -48,25 +49,27 @@ class Data(Path):
         hidden_activations = ['relu', 'sigmoid', 'tanh']
         output_activations = ['linear', 'sigmoid', 'softmax']
         optimizers = ['sgd', 'rmsprop', 'adam', 'adadelta', 'adagrad']
-        losses = [
-            'losses.SparseCategoricalCrossentropy(from_logits=True)',
-            # 'losses.Poisson()',
-            # 'losses.KLDivergence()',
-            # 'losses.MeanSquaredError()',
-            # 'losses.MeanAbsoluteError()',
-            # 'losses.MeanAbsolutePercentageError()',
-            # 'losses.MeanSquaredLogarithmicError()',
-            # 'losses.Huber()',
-            # 'losses.LogCosh()',
-            # 'losses.Hinge()',
-            # 'losses.SquaredHinge()',
-            # 'losses.CategoricalHinge()'
-        ]
+        losses = ['losses.SparseCategoricalCrossentropy(from_logits=True)']
         return dataset, labels, hidden_activations, output_activations, optimizers, losses
+
+    def load_training_result(self, epoch: int) -> None:
+        filepath = self.join(self.var.history_dir, str(epoch))
+        for filename in self.listdir(filepath):
+            d = json.load(open(self.join(filepath, filename)))
+            print(filename)
+
+            # keys = ['loss', 'accuracy', 'val_loss', 'val_accuracy']
+            for k, v in d.items():
+                print(k, v[str(epoch - 1)])
+            print()
 
     def load_test_dataset(self) -> tuple:
         dataset, labels = self._load_dataset(directory='Test')
         return dataset, labels
+
+    def load_test_result(self, epoch: int) -> None:
+        content = self.read(filepath=self.join(self.var.result_dir, str(epoch) + '.txt'))
+        print(content)
 
     def _load_dataset(self, directory) -> tuple:
         dataset = list()
@@ -74,7 +77,7 @@ class Data(Path):
 
         # A=0 ... Z=25
         for category in categories:
-            csv_path = self.path(directory, category + '.csv')
+            csv_path = self.join(directory, category + '.csv')
             cat_dataset = self._csv_2_list(csv_path=csv_path)
             cat_label = [[ord(category) - 65]] * len(cat_dataset)
             dataset.extend(cat_dataset)
