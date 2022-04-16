@@ -20,6 +20,7 @@ from trace import Trace
 # Save and load model with checkpoint
 # https://keras.io/api/callbacks/model_checkpoint/
 
+DEFAULT_EPOCH = 1000
 BATCH_SIZE = 128
 
 path = Path()
@@ -129,7 +130,7 @@ class CNN:
 
     def _model(self, *func, name: str, epoch: int, x: np.array, y: np.array) -> None:
         model = self._create_model(*func, x=x) if epoch == 1000 else self._load_model(filepath=path.join(path.var.model_dir, str(epoch - 1000), name))
-        history = model.fit(x, y, batch_size=BATCH_SIZE, epochs=epoch, validation_split=.2)
+        history = model.fit(x, y, batch_size=BATCH_SIZE, epochs=DEFAULT_EPOCH, validation_split=.2)
         self._save_history(
             filepath=path.join(path.var.history_dir, str(epoch), name + '.json'),
             history_df=pd.DataFrame(history.history)
