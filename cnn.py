@@ -20,6 +20,7 @@ from trace import Trace
 # Save and load model with checkpoint
 # https://keras.io/api/callbacks/model_checkpoint/
 
+DEFAULT_EPOCH = 1000
 BATCH_SIZE = 128
 
 path = Path()
@@ -49,8 +50,8 @@ class CNN:
                 print('\n\n\n')
 
     def train(self, *data, epoch: int) -> None:
-        x, y, hidden_activations, output_activations, optimizers, losses = data
         trace.update_liveness(alive=True)
+        x, y, hidden_activations, output_activations, optimizers, losses = data
         x = self._reshape_dataset(x=x)
         x, y = self._shuffle_inputs(x=x, y=y)
 
@@ -59,8 +60,17 @@ class CNN:
                 for optimizer in optimizers:
                     for loss in losses:
                         name = hidden_activation + '_' + output_activation + '_' + optimizer + '_' + loss.split('.')[1].split('(')[0]
-                        if self._model_exists(name=name, epoch=epoch) or self._name_was_used(name=name):
+
+                        # Previous epoch model does not exist.
+                        if epoch != 1000 and not self._model_exists(name=name, epoch=epoch - 1000):
                             continue
+                        # The model already exists.
+                        if self._model_exists(name=name, epoch=epoch):
+                            continue
+                        # The model is being created by another process.
+                        if self._name_was_used(name=name):
+                            continue
+
                         try:
                             print(name, '\n')
                             self._model(
@@ -120,7 +130,7 @@ class CNN:
 
     def _model(self, *func, name: str, epoch: int, x: np.array, y: np.array) -> None:
         model = self._create_model(*func, x=x) if epoch == 1000 else self._load_model(filepath=path.join(path.var.model_dir, str(epoch - 1000), name))
-        history = model.fit(x, y, batch_size=BATCH_SIZE, epochs=epoch, validation_split=.2)
+        history = model.fit(x, y, batch_size=BATCH_SIZE, epochs=DEFAULT_EPOCH, validation_split=.2)
         self._save_history(
             filepath=path.join(path.var.history_dir, str(epoch), name + '.json'),
             history_df=pd.DataFrame(history.history)
