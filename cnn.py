@@ -68,7 +68,7 @@ class CNN:
                         if self._model_exists(name=name, epoch=epoch):
                             continue
                         # The model is being created by another process.
-                        if self._name_was_used(name=name):
+                        if self._name_was_used(name=name + str(epoch)):
                             continue
 
                         try:
