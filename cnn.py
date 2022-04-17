@@ -62,13 +62,13 @@ class CNN:
                         name = hidden_activation + '_' + output_activation + '_' + optimizer + '_' + loss.split('.')[1].split('(')[0]
 
                         # Previous epoch model does not exist.
-                        if epoch != 1000 and not self._model_exists(name=name, epoch=epoch - 1000):
+                        if epoch != 1000 and not self._model_exists(model_path=path.join(path.var.model_dir, str(epoch - 1000))):
                             continue
                         # The model already exists.
-                        if self._model_exists(name=name, epoch=epoch):
+                        if self._model_exists(model_path=path.join(path.var.model_dir, str(epoch))):
                             continue
                         # The model is being created by another process.
-                        if self._name_was_used(name=name):
+                        if self._name_was_used(name=name + str(epoch)):
                             continue
 
                         try:
@@ -137,9 +137,9 @@ class CNN:
         )
         model.save(path.join(path.var.model_dir, str(epoch), name))
 
-    def _model_exists(self, name: str, epoch: int) -> bool:
-        for model_name in path.listdir(path.join(path.var.model_dir, str(epoch))):
-            if model_name == name:
+    def _model_exists(self, model_path: str) -> bool:
+        for model_name in path.listdir(model_path):
+            if model_name == model_path:
                 return True
         return False
 
