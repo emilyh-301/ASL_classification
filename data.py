@@ -54,13 +54,14 @@ class Data(Path):
 
     def load_training_result(self, epoch: int) -> None:
         filepath = self.join(self.var.history_dir, str(epoch))
-        for filename in self.listdir(filepath):
+        for filename in sorted(self.listdir(filepath)):
             d = json.load(open(self.join(filepath, filename)))
             print(filename)
 
             # keys = ['loss', 'accuracy', 'val_loss', 'val_accuracy']
             for k, v in d.items():
-                print(k, v[str(epoch - 1)])
+                max_epoch = max([e for e in v.keys()])
+                print(k, v[str(max_epoch)])
             print()
 
     def load_test_dataset(self) -> tuple:
