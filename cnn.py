@@ -135,7 +135,7 @@ class CNN:
             filepath=path.join(path.var.history_dir, str(epoch), name + '.json'),
             history_df=pd.DataFrame(history.history)
         )
-        model.save(filename=path.join(path.var.model_dir, str(epoch), name))
+        model.save(path.join(path.var.model_dir, str(epoch), name))
 
     def _model_exists(self, name: str, epoch: int) -> bool:
         for model_name in path.listdir(path.join(path.var.model_dir, str(epoch))):
