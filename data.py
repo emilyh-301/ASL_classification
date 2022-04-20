@@ -70,7 +70,13 @@ class Data(Path):
 
     def load_test_result(self, epoch: int) -> None:
         content = self.read(filepath=self.join(self.var.result_dir, str(epoch) + '.txt'))
-        print(content)
+        content_dict = dict()
+        for i in range(0, len(content), 2):
+            content_dict[content[i]] = float(content[i+1].split(' ')[1][:-1])
+        content_dict = dict(reversed(sorted(content_dict.items(), key=lambda item: item[1])))
+
+        for k, v in content_dict.items():
+            print(k + ':', str(v) + '%')
 
     def _load_dataset(self, directory) -> tuple:
         dataset = list()
