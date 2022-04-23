@@ -29,6 +29,7 @@ trace = Trace()
 
 class CNN:
     def test(self, *data, epoch: int) -> None:
+        path.delete(path.var.result_dir, str(epoch) + '.txt')
         x, y = data
         x = self._reshape_dataset(x=x)
         model_path = path.join(path.var.model_dir, str(epoch))
@@ -42,14 +43,14 @@ class CNN:
                 accuracy = self._accuracy(prediction=prediction, y=y)
                 path.write(
                     filepath=path.join(path.var.result_dir, str(epoch) + '.txt'),
-                    content=name + '\n' + 'Accuracy: ' + str(accuracy) + '%' + '\n',
+                    content=name + ' ' + str(accuracy) + '\n',
                     mode='a'
                 )
             except Exception as e:
                 print(e)
                 print('\n\n\n')
 
-    def train(self, *data, epoch: int) -> None:
+    def train(self, *data, epoch: int, test_result=None) -> None:
         trace.update_liveness(alive=True)
         x, y, hidden_activations, output_activations, optimizers, losses = data
         x = self._reshape_dataset(x=x)
@@ -61,7 +62,7 @@ class CNN:
                     for loss in losses:
                         name = hidden_activation + '_' + output_activation + '_' + optimizer + '_' + loss.split('.')[1].split('(')[0]
 
-                        # Previous epoch model does not exist.
+                        # The previous epoch model does not exist.
                         if epoch != 1000 and not self._model_exists(name=name, epoch=epoch - 1000):
                             continue
                         # The model already exists.
@@ -69,6 +70,14 @@ class CNN:
                             continue
                         # The model is being created by another process.
                         if self._name_was_used(name=name + str(epoch)):
+                            continue
+
+                        # The previous test result does not exist.
+                        if test_result and name not in test_result:
+                            continue
+
+                        # The previous test accuracy is less than 70%.
+                        if test_result and name in test_result and test_result[name] < 70:
                             continue
 
                         try:
