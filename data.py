@@ -52,31 +52,31 @@ class Data(Path):
         losses = ['losses.SparseCategoricalCrossentropy(from_logits=True)']
         return dataset, labels, hidden_activations, output_activations, optimizers, losses
 
-    def load_training_result(self, epoch: int) -> None:
+    def load_training_result(self, epoch: int) -> dict:
+        training_result = dict()
         filepath = self.join(self.var.history_dir, str(epoch))
         for filename in sorted(self.listdir(filepath)):
             d = json.load(open(self.join(filepath, filename)))
-            print(filename)
 
             # keys = ['loss', 'accuracy', 'val_loss', 'val_accuracy']
+            final_result = dict()
             for k, v in d.items():
                 max_epoch = max([e for e in v.keys()])
-                print(k, v[str(max_epoch)])
-            print()
+                final_result[k] = v[str(max_epoch)]
+            training_result[filename] = final_result
+        return training_result
 
     def load_test_dataset(self) -> tuple:
         dataset, labels = self._load_dataset(directory='Test')
         return dataset, labels
 
-    def load_test_result(self, epoch: int) -> None:
+    def load_test_result(self, epoch: int) -> dict:
         content = self.read(filepath=self.join(self.var.result_dir, str(epoch) + '.txt'))
         content_dict = dict()
-        for i in range(0, len(content), 2):
-            content_dict[content[i]] = float(content[i+1].split(' ')[1][:-1])
+        for line in content:
+            content_dict[line.split(' ')[0]] = float(line.split(' ')[1])
         content_dict = dict(reversed(sorted(content_dict.items(), key=lambda item: item[1])))
-
-        for k, v in content_dict.items():
-            print(k + ':', str(v) + '%')
+        return content_dict
 
     def _load_dataset(self, directory) -> tuple:
         dataset = list()
