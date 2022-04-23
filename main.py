@@ -36,7 +36,11 @@ if __name__ == '__main__':
         Trace().start()
         cnn = CNN()
         data = Data()
-        cnn.train(*data.load_training_dataset(), epoch=arg)
+        cnn.train(
+            *data.load_training_dataset(),
+            epoch=arg,
+            test_result=data.load_test_result(epoch=arg - 1000) if arg != 1000 else None
+        )
 
     # Test
     if cmd == 2:
@@ -47,12 +51,19 @@ if __name__ == '__main__':
     # Training Result
     if cmd == 3:
         data = Data()
-        data.load_training_result(epoch=arg)
+        training_result = data.load_training_result(epoch=arg)
+        for filename, result in training_result.items():
+            print(filename)
+            for k, v in result.items():
+                print(k + ':', v)
+            print()
 
     # Test Result
     if cmd == 4:
         data = Data()
-        data.load_test_result(epoch=arg)
+        test_result = data.load_test_result(epoch=arg)
+        for k, v in test_result.items():
+            print(k + ':', str(v) + '%')
 
     # Data Preprocessing
     if cmd == 9:
