@@ -4,8 +4,10 @@ import random
 import json
 import numpy as np
 from PIL import Image
+from matplotlib import pyplot as plt
 
 from path import Path
+
 
 categories = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S',
                       'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
@@ -77,6 +79,23 @@ class Data(Path):
             content_dict[line.split(' ')[0]] = float(line.split(' ')[1])
         content_dict = dict(reversed(sorted(content_dict.items(), key=lambda item: item[1])))
         return content_dict
+
+    def show_test_result(self) -> None:
+        max_epoch = max([int(filename.split('.')[0]) for filename in self.listdir(self.var.result_dir)])
+        result = self.load_test_result(epoch=max_epoch)
+
+        name, accuracy = list(), list()
+        for k, v in reversed(result.items()):
+            if v > 70:
+                name.append(k)
+                accuracy.append(v)
+
+        plt.barh(name, accuracy, height=0.2)
+        plt.tight_layout()
+        plt.title('Accuracy of Models After 3000 Epochs')
+        plt.xlabel('Accuracy')
+        plt.ylabel('Models')
+        plt.show()
 
     def _load_dataset(self, directory) -> tuple:
         dataset = list()

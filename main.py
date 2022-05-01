@@ -9,13 +9,14 @@ if len(sys.argv) < 2:
           '2: Test\n\t'
           '3: Training Result\n\t'
           '4: Test Result\n\t'
+          '5: Show Test Result in Graph\n\t'
           '9: Data Preprocessing\n\n')
     sys.exit(1)
 
 cmd = int(sys.argv[1])
-arg = int(sys.argv[2]) if cmd != 9 else 0
+arg = int(sys.argv[2]) if cmd != 5 and cmd != 9 else 0
 
-if cmd != 9 and arg == 0:
+if (cmd != 5 and cmd != 9) and arg == 0:
     print('Specify the epoch number.\n')
     sys.exit(1)
 
@@ -64,6 +65,11 @@ if __name__ == '__main__':
         test_result = data.load_test_result(epoch=arg)
         for k, v in test_result.items():
             print(k + ':', str(v) + '%')
+
+    # SHow Test Result in Graph
+    if cmd == 5:
+        data = Data()
+        data.show_test_result()
 
     # Data Preprocessing
     if cmd == 9:
